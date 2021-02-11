@@ -209,12 +209,22 @@ class SchedDomain(SchedProcFSNode):
     def __init__(self, nodes):
         super(SchedDomain, self).__init__(nodes)
 
-        obj_flags = set()
-        for flag in list(SchedDomainFlag):
-            if self.flags & flag.value == flag.value:
-                obj_flags.add(flag)
+        # Recent kernels now have a space-separated list of flags instead of a
+        # packed bitfield
+        flags = self.flags
+        if isinstance(flags, str):
+            flags = flags.split()
+            def has_flag(flags, flag):
+                return flag in flags
+        else:
+            def has_flag(flags, flag):
+                return flags & flag.value == flag.value
 
-        self.flags = obj_flags
+        self.flags = {
+            flag
+            for flag in SchedDomainFlag
+            if has_flag(flags, flag)
+        }
 
 
 class SchedProcFSData(SchedProcFSNode):
